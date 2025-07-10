@@ -24,10 +24,11 @@ cargo build --release
 ```
 
 ### Arguments
-
-Argument Description
---port Port on which the proxy will listen
---origin Origin URL to which requests are sent
+```
+Argument        Description
+--port          Port on which the proxy will listen (defaults to :8080)
+--origin        Origin URL to which requests are sent
+```
 
 ### Example
 
