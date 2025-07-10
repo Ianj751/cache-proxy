@@ -1,0 +1,11 @@
+[package]
+name = "cache-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.11.0"
+anyhow = "1.0.98"
+awc = "3.7.0"
+clap = {version = "4", features = ["derive"]}
+serde_json = "1.0.140"
