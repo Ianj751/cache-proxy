@@ -27,7 +27,7 @@ async fn send_req(
         Err(poisoned) => poisoned.into_inner(),
     };
 
-    let val = check_cache(req.clone(), request_body.clone(), &mut connection)
+    let val: Option<HttpResponse> = check_cache(req.clone(), request_body.clone(), &mut connection)
         .map_err(actix_web::error::ErrorInternalServerError)?;
     if let Some(resp) = val {
         return actix_web::Result::Ok(resp);
@@ -49,7 +49,7 @@ async fn send_req(
         .body()
         .await
         .map_err(actix_web::error::ErrorBadRequest)?;
-    let client_resp: HttpResponse = client_resp.set_body(body).map_into_boxed_body();
+    let client_resp: HttpResponse = client_resp.set_body(body.clone()).map_into_boxed_body();
 
     //this is so bad but i dont feel like dealing with the borrow checker rn
     let mut cached_resp = HttpResponse::new(client_resp.status());
@@ -59,7 +59,13 @@ async fn send_req(
             .headers_mut()
             .append(name.clone(), value.clone());
     }
-    let _ = set_cache_val(req, request_body, cached_resp, &mut connection);
+    let _ = set_cache_val(
+        req,
+        request_body,
+        cached_resp,
+        body.to_vec(),
+        &mut connection,
+    );
 
     actix_web::Result::Ok(client_resp)
 }

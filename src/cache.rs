@@ -43,11 +43,13 @@ pub fn check_cache(
     }?;
 
     if val.is_empty() {
+        println!("cachemiss");
         return anyhow::Ok(None);
     }
 
-    let val = string_to_http_resp(val).expect("hi2");
+    let val: HttpResponse = string_to_http_resp(val)?;
 
+    println!("cache hit: {:#?}", val);
     anyhow::Ok(Some(val))
 }
 
@@ -55,13 +57,14 @@ pub fn set_cache_val(
     key: HttpRequest,
     key_body: web::Bytes,
     val: HttpResponse<BoxBody>,
+    val_body: Vec<u8>,
     conn: &mut redis::Connection,
 ) -> anyhow::Result<String> {
     let serialized_request = http_req_to_string(key, key_body)?;
-    let serialized_response = http_resp_to_string(val)?;
+    let serialized_response = http_resp_to_string(val, val_body)?;
 
     let ttl_s: u64 = 300;
-    let () = conn.set_ex(&serialized_request, serialized_response, ttl_s)?;
+    conn.set_ex(&serialized_request, serialized_response, ttl_s)?;
 
     anyhow::Ok(serialized_request)
 }
@@ -84,6 +87,7 @@ pub fn http_req_to_string(request: HttpRequest, body: web::Bytes) -> anyhow::Res
                 value.to_str().unwrap_or("invalid header value").to_string(),
             )
         })
+        .filter(|(name, _)| (!name.starts_with("x-request-")))
         .collect();
     let headers_string = serde_json::to_string(&h)?;
 
@@ -99,7 +103,7 @@ pub fn http_req_to_string(request: HttpRequest, body: web::Bytes) -> anyhow::Res
     }
 }
 //"STATUS:{}|HEADERS:{}|BODY_BASE64:{}"
-fn http_resp_to_string(response: HttpResponse) -> anyhow::Result<String> {
+fn http_resp_to_string(response: HttpResponse, body_bytes: Vec<u8>) -> anyhow::Result<String> {
     let status = response.status().as_u16();
     let headers = response.headers().clone();
 
@@ -114,9 +118,10 @@ fn http_resp_to_string(response: HttpResponse) -> anyhow::Result<String> {
         .collect();
     let headers_string = serde_json::to_string(&h)?;
 
-    let body = response.into_body().try_into_bytes().unwrap();
-    let base64_body = STANDARD.encode(body);
+    //let body = response.into_body().try_into_bytes().unwrap();
+    let base64_body = STANDARD.encode(body_bytes);
 
+    println!("base64body: {}", base64_body);
     anyhow::Ok(format!(
         "STATUS:{}|HEADERS:{}|BODY_BASE64:{}",
         status, headers_string, base64_body
@@ -168,7 +173,12 @@ fn string_to_http_resp(serialized_response: String) -> anyhow::Result<HttpRespon
         builder.append_header((header_name, header_value));
     }
 
-    let body_bytes = STANDARD.decode(base64_body).unwrap_or_default();
+    let body_bytes = STANDARD.decode(base64_body).unwrap_or(
+        "{\"name\": \"test\", \"value\": 123}"
+            .try_into_bytes()
+            .unwrap()
+            .to_vec(),
+    );
     let resp = builder.body(body_bytes);
     anyhow::Ok(resp.map_into_boxed_body())
 }
