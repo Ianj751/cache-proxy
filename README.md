@@ -2,14 +2,6 @@
 
 `cache-proxy` is a simple HTTP caching proxy server written in Rust. It intercepts HTTP requests, forwards them to an origin server, and caches the responses in Redis for improved performance on repeated requests.
 
-## Features
-
-- ✅ Fast and lightweight, built in Rust
-- ✅ Configurable origin server and port
-- ✅ Transparent HTTP request forwarding
-- ✅ Caches responses in Redis to reduce load on the origin server
-- ✅ Ideal for load-testing scenarios, repeated API queries, or simple CDN-like use cases
-
 ## Installation
 
 To build and run the proxy, you'll need:
@@ -32,10 +24,11 @@ cargo build --release
 ```
 
 ### Arguments
-
-Argument Description
---port Port on which the proxy will listen
---origin Origin URL to which requests are sent
+```
+Argument        Description
+--port          Port on which the proxy will listen (defaults to :8080)
+--origin        Origin URL to which requests are sent
+```
 
 ### Example
 
