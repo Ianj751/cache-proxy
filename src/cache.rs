@@ -43,13 +43,11 @@ pub fn check_cache(
     }?;
 
     if val.is_empty() {
-        println!("cachemiss");
         return anyhow::Ok(None);
     }
 
     let val: HttpResponse = string_to_http_resp(val)?;
 
-    println!("cache hit: {:#?}", val);
     anyhow::Ok(Some(val))
 }
 
@@ -121,7 +119,6 @@ fn http_resp_to_string(response: HttpResponse, body_bytes: Vec<u8>) -> anyhow::R
     //let body = response.into_body().try_into_bytes().unwrap();
     let base64_body = STANDARD.encode(body_bytes);
 
-    println!("base64body: {}", base64_body);
     anyhow::Ok(format!(
         "STATUS:{}|HEADERS:{}|BODY_BASE64:{}",
         status, headers_string, base64_body
